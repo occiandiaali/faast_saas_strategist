@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/app-logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FaastSaaS // Visual SaaS Architecture App Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+      .htmx-indicator {
+        display: none;
+      }
+      .htmx-request .htmx-indicator {
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+    <div class="max-w-4xl mx-auto py-12 px-4">
+      <header
+        class="mb-12 border-b border-slate-800 pb-6 flex justify-between items-center"
+      >
+        <div>
+          <h1
+            class="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+          >
+            ⚡faastsaas
+          </h1>
+          <p class="text-slate-400 mt-2 text-xs md:text-lg">
+            Quick SaaS Scaffold Generator.
+          </p>
+        </div>
+        <a
+          href="/index"
+          class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition"
+        >
+          📈 AI Marketing Strategist →
+        </a>
+      </header>
+
+      <a
+        href="/"
+        class="bg-cyan-600/20 hover:bg-cyan-600/30 text-red-400 border border-cyan-500/30 p-2 rounded-lg font-semibold text-sm transition"
+      >
+        Logout
+      </a>
+
+      <form
+        action="/api/generate"
+        method="POST"
+        id="gen-form"
+        onsubmit="triggerDownloadUI()"
+        class="space-y-8"
+      >
+        <!-- 1. Core Settings Section -->
+        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+          <h2 class="text-xl font-bold mb-4 text-emerald-400">1. Core Setup</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium mb-2 text-slate-300"
+                >Project Engine Name</label
+              >
+              <input
+                type="text"
+                name="projectName"
+                value="my-saas-platform"
+                class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-emerald-500 text-white"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2 text-slate-300"
+                >Core Engine Architecture</label
+              >
+              <select
+                name="runtime"
+                class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white"
+              >
+                <option value="node-express">
+                  NodeJS + ExpressJS (Default Stable)
+                </option>
+                <option value="bun-hono">
+                  Bun + Hono (High Performance API)
+                </option>
+                <option value="bun-elysia">
+                  Bun + Elysia (TypeScript First)
+                </option>
+              </select>
+              <p class="text-xs text-slate-400 mb-4">
+                After you download &amp; unzip, remember to run *npm install* or
+                *bun install* before you run the project the first time.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Storage & Identity Layer Section -->
+        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+          <h2 class="text-xl font-bold mb-4 text-cyan-400">
+            2. Storage, Identity & Subscription Layers
+          </h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-2 text-slate-300"
+                >MongoDB Connection Target String</label
+              >
+              <input
+                type="text"
+                name="dbUri"
+                value="mongodb://localhost:27017/saas-db"
+                class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-slate-300 text-sm"
+              />
+              <p class="text-xs text-slate-500 mt-1">
+                Accepts local instances or MongoDB Atlas Connection Strings
+                cleanly. Also replace the MONGO_URI value in your project's
+                *.env.example* file, after you download the zip, for safety.
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2 text-slate-300"
+                >SaaS Production Billing Engine Infrastructure
+                Integration</label
+              >
+              <select
+                name="paymentProvider"
+                class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white font-semibold"
+              >
+                <option value="stripe">
+                  Stripe (Global Subscriptions - Default)
+                </option>
+                <option value="paystack">
+                  Paystack (African Markets Optimization Matrix)
+                </option>
+                <option value="paddle">
+                  Paddle (Merchant of Record Global Billing Layer)
+                </option>
+              </select>
+            </div>
+            <div
+              class="bg-slate-900/40 p-4 rounded border border-slate-800 text-sm space-y-2"
+            >
+              <div
+                class="flex items-center text-emerald-400 font-normal md:font-medium"
+              >
+                ✓ User Authentication Suite (Registration, Login Session JWT,
+                Secure Cryptography)
+              </div>
+              <div
+                class="flex items-center text-emerald-400 font-normal md:font-medium"
+              >
+                ✓ Scaffolding Core Module: Full Rails-style CRUD Element Stream
+                Dashboard
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Custom Data Models Section -->
+        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+          <h2 class="text-xl font-bold mb-2 text-amber-400">
+            3. Custom Data Models
+          </h2>
+          <p class="text-xs text-slate-400 mb-4">
+            FaastSaaS provides you with default Users and Items models as a ToDo
+            List stub. Define your own models as you require in your project.
+          </p>
+        </section>
+
+        <!-- 4. UI Presentation Section -->
+        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+          <h2 class="text-xl font-bold mb-4 text-purple-400">
+            4. Client Presentation UI
+          </h2>
+          <div>
+            <label class="block text-sm font-medium mb-2 text-slate-300"
+              >CSS Compilation Layer Framework</label
+            >
+            <select
+              name="cssFramework"
+              class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white"
+            >
+              <option value="tailwindcss">
+                TailwindCSS (Configured CDN Injection Utility)
+              </option>
+              <option value="bootstrap5">
+                Bootstrap 5 (Responsive Components Standard)
+              </option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Submit Engine Layout Trigger Controls -->
+        <div class="pt-4 relative">
+          <div
+            id="status-toast"
+            class="hidden mt-4 mb-2 p-4 bg-emerald-950/80 border border-emerald-500 rounded-lg text-center text-emerald-300 animate-pulse text-sm"
+          >
+            ✨ Packing authentication framework, database models, partial views,
+            and subscription modules... Your download will begin instantly.
+          </div>
+
+          <button
+            type="submit"
+            id="submit-btn"
+            disabled
+            class="w-full bg-gradient-to-r from-green-700 to-green-500 p-4 rounded-xl text-sm md:text-lg font-bold shadow-xl tracking-wide transition transform active:scale-95 flex justify-center items-center gap-3"
+          >
+            <span id="btn-text"
+              >📦 Generate & Download Full SaaS Boilerplate Source (.zip)</span
+            >
+          </button>
+        </div>
+      </form>
+    </div>
+    <!--FOOTER-->
+    <footer
+      class="bottom-0 left-0 z-20 w-full p-4 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
+    >
+      <span class="text-sm text-body sm:text-center"
+        >© 2026 FaastSaas by
+        <a
+          href="https://occiandiaali.com"
+          target="_blank"
+          class="underline text-emerald-400"
+          >occiandiaali.com</a
+        >
+        | All Rights Reserved.</span
+      >
+      <ul
+        class="flex flex-wrap items-center mt-3 text-sm font-medium text-body sm:mt-0"
+      >
+        <li><a href="#" class="hover:underline me-4 md:me-6">About</a></li>
+        <li>
+          <a href="/index" class="hover:underline me-4 md:me-6">Strategist</a>
+        </li>
+      </ul>
+    </footer>
+
+    <script>
+      function triggerDownloadUI() {
+        const btn = document.getElementById("submit-btn");
+        const text = document.getElementById("btn-text");
+        const toast = document.getElementById("status-toast");
+
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+        text.innerHTML =
+          "⚙️ Executing Full-Stack App Scaffolding Compilation...";
+        toast.classList.remove("hidden");
+
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          btn.style.cursor = "pointer";
+          text.innerHTML =
+            "📦 Generate & Download Full SaaS Boilerplate Source (.zip)";
+          toast.classList.add("hidden");
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>

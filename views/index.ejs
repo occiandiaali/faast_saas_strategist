@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/app-logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FaastSaaS // AI Growth Strategist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- html2pdf library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+      .htmx-indicator {
+        display: none !important;
+      }
+      .htmx-request .htmx-indicator,
+      .htmx-request.htmx-indicator {
+        display: flex !important;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+    <div class="max-w-4xl mx-auto py-12 px-4">
+      <!-- Header Nav -->
+      <header
+        class="mb-8 border-b border-slate-800 pb-6 flex justify-between items-center"
+      >
+        <div>
+          <h1
+            class="text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+          >
+            ⚡faastsaas
+          </h1>
+          <p class="text-slate-400 text-sm">
+            AI Marketing Strategist For Indie SaaS
+          </p>
+        </div>
+        <a
+          href="/generator"
+          class="text-xs md:text-sm bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-slate-300 border border-slate-700 transition"
+        >
+          Boilerplate Generator →
+        </a>
+      </header>
+      <a
+        href="/"
+        class="bg-cyan-600/20 hover:bg-cyan-600/30 text-red-400 border border-cyan-500/30 p-2 rounded-lg font-semibold text-sm transition"
+      >
+        Logout
+      </a>
+
+      <div
+        class="mb-6 bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-sm"
+      >
+        <!--Extraction Point-->
+        <div
+          class="max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4"
+        >
+          <h3 class="text-lg font-bold text-white">Domain Verification</h3>
+          <p class="text-xs text-slate-400">
+            Verify domain ownership to unlock custom marketplace integrations.
+          </p>
+
+          <!-- Step 1 Form: Enter Domain & Generate Token -->
+          <form
+            hx-post="/api/market/generate-token"
+            hx-target="#verification-step-2"
+            hx-swap="innerHTML"
+            class="flex gap-2"
+          >
+            <input
+              type="text"
+              name="domain"
+              placeholder="mysite.com"
+              required
+              class="flex-1 bg-slate-800 border border-slate-700 text-white text-xs p-2.5 rounded focus:outline-none focus:border-emerald-500"
+            />
+
+            <button
+              type="submit"
+              class="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded transition"
+            >
+              Generate Code
+            </button>
+          </form>
+
+          <!-- Step 2 Target: Shows Meta Tag + Verification Button -->
+          <div id="verification-step-2"></div>
+
+          <!-- Step 3 Target: Displays Final Success/Failure Message -->
+          <div id="verification-result"></div>
+        </div>
+      </div>
+      <!--END-->
+
+      <!--Extraction point 2-->
+
+      <!-- Form Card -->
+      <section
+        class="bg-slate-800/50 p-6 rounded-xl border border-slate-800 mb-8"
+      >
+        <h2 class="text-xl font-bold mb-2 text-cyan-400">
+          Analyze Your SaaS Landing Page
+        </h2>
+        <p class="text-sm text-slate-400 mb-6">
+          Enter either your local development URL (e.g.,
+          <code class="text-amber-300">http://localhost:3000</code>) or a
+          deployed live URL. Our crawler will analyze your page and generate a
+          tailored go-to-market plan.
+        </p>
+
+        <form
+          hx-post="/api/market/analyze"
+          hx-target="#strategy-output"
+          hx-indicator="#loading-spinner"
+          class="space-y-4"
+        >
+          <div>
+            <label class="block text-sm font-medium mb-2 text-slate-300"
+              >Target SaaS URL</label
+            >
+            <input
+              type="url"
+              name="url"
+              placeholder="http://localhost:3000 or https://my-saas.com"
+              required
+              class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-cyan-500 text-white text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 p-3 rounded-lg text-white font-bold transition shadow-lg flex justify-center items-center gap-2"
+          >
+            <span>🚀 Generate Go-To-Market Plan</span>
+          </button>
+        </form>
+
+        <!-- Loading Indicator -->
+        <div
+          id="loading-spinner"
+          class="htmx-indicator mt-6 items-center justify-center gap-3 text-cyan-400 text-sm animate-pulse"
+        >
+          <svg
+            class="animate-spin h-5 w-5 text-cyan-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            ></path>
+          </svg>
+          <span
+            >Crawling site content and running LangChain marketing
+            agent...</span
+          >
+        </div>
+      </section>
+
+      <!-- Output Container Wrapper -->
+      <section class="space-y-4">
+        <!-- Output Header & Export Controls (Hidden by default, shown via HTMX event) -->
+        <div
+          id="export-toolbar"
+          class="hidden justify-between items-center bg-slate-800/80 p-4 rounded-xl border border-slate-700"
+        >
+          <span class="text-sm font-semibold text-slate-300"
+            >📊 Marketing Roadmap Ready</span
+          >
+          <div class="flex gap-2">
+            <button
+              onclick="downloadAsText()"
+              class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs font-medium text-slate-200 transition flex items-center gap-1.5"
+            >
+              📄 Download TXT
+            </button>
+            <button
+              onclick="downloadAsPDF()"
+              class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-semibold shadow transition flex items-center gap-1.5"
+            >
+              📥 Download PDF
+            </button>
+          </div>
+        </div>
+
+        <div id="strategy-output" class="min-h-[200px]">
+          <div
+            class="bg-slate-800/30 p-8 rounded-xl border border-dashed border-slate-800 text-center text-slate-500 text-sm"
+          >
+            Your AI-generated marketing roadmap will appear here after analysis.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!--FOOTER-->
+    <footer
+      class="bottom-0 left-0 z-20 w-full p-4 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
+    >
+      <span class="text-sm text-body sm:text-center"
+        >© 2026 FaastSaas by
+        <a
+          href="https://occiandiaali.com"
+          target="_blank"
+          class="underline text-emerald-400"
+          >occiandiaali.com</a
+        >
+        | All Rights Reserved.</span
+      >
+      <ul
+        class="flex flex-wrap items-center mt-3 text-sm font-medium text-body sm:mt-0"
+      >
+        <li>
+          <a href="#" class="hover:underline me-4 md:me-6">About</a>
+        </li>
+        <li>
+          <a href="/generator " class="hover:underline me-4 md:me-6"
+            >Generator</a
+          >
+        </li>
+      </ul>
+    </footer>
+
+    <script>
+      // Reveal toolbar when HTMX finishes swapping content into #strategy-output
+      document.body.addEventListener("htmx:afterSwap", function (evt) {
+        if (evt.detail.target.id === "strategy-output") {
+          const toolbar = document.getElementById("export-toolbar");
+          const targetContainer = document.getElementById("strategy-output");
+
+          if (!toolbar || !targetContainer) return;
+          // Check if the swapped content is an actual generated strategy
+          const isStrategyResult =
+            targetContainer.querySelector("#marketing-strategy-content") !==
+            null;
+
+          if (isStrategyResult) {
+            // Show download toolbar for generated strategy
+            toolbar.classList.remove("hidden");
+            toolbar.classList.add("flex");
+          } else {
+            // Hide download toolbar for errors / domain authorization prompts
+            toolbar.classList.remove("flex");
+            toolbar.classList.add("hidden");
+          }
+        }
+      });
+
+      // 1. Download Content as Plain Text
+      function downloadAsText() {
+        const container = document.getElementById("strategy-output");
+        if (!container) return;
+
+        // Extract plain text content
+        const textContent = container.innerText;
+        const blob = new Blob([textContent], {
+          type: "text/plain;charset=utf-8",
+        });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `SaaS_Marketing_Strategy_${Date.now()}.txt`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      // Download Content as Formatted PDF
+      function downloadAsPDF() {
+        const element = document.getElementById("strategy-output");
+        if (!element) return;
+
+        const opt = {
+          margin: [0.5, 0.5, 0.5, 0.5], // Top, Left, Bottom, Right
+          filename: `SaaS_Marketing_Strategy_${Date.now()}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            backgroundColor: "#0f172a", // Matches slate-900 background
+            scrollY: 0, // Fixes scroll offset / top empty space bug
+            scrollX: 0,
+            useCORS: true,
+            logging: false,
+          },
+          jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] }, // Prevents awkward element splits across pages
+        };
+
+        html2pdf().set(opt).from(element).save();
+      }
+    </script>
+  </body>
+</html>
