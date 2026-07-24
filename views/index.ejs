@@ -27,27 +27,29 @@
       >
         <div>
           <h1
-            class="text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+            class="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
           >
             ⚡faastsaas
           </h1>
-          <p class="text-slate-400 text-sm">
+          <p class="text-slate-400 mt-2 text-xs md:text-lg">
             AI Marketing Strategist For Indie SaaS
           </p>
         </div>
-        <a
-          href="/generator"
-          class="text-xs md:text-sm bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-slate-300 border border-slate-700 transition"
-        >
-          Boilerplate Generator →
-        </a>
+        <div class="flex flex-col md:flex-row md:mx-auto">
+          <a
+            href="/generator"
+            class="text-xs md:text-sm bg-slate-800 hover:bg-slate-700 px-4 py-2 m-2 rounded-lg text-slate-300 border border-slate-700 transition"
+          >
+            Boilerplate Generator →
+          </a>
+          <a
+            href="/logout"
+            class="bg-cyan-600/20 hover:bg-cyan-600/30 text-red-400 border border-cyan-500/30 p-2 text-center md:py-4 rounded-lg font-semibold text-xs md:text-sm transition"
+          >
+            Logout
+          </a>
+        </div>
       </header>
-      <a
-        href="/"
-        class="bg-cyan-600/20 hover:bg-cyan-600/30 text-red-400 border border-cyan-500/30 p-2 rounded-lg font-semibold text-sm transition"
-      >
-        Logout
-      </a>
 
       <div
         class="mb-6 bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-sm"
@@ -58,12 +60,12 @@
         >
           <h3 class="text-lg font-bold text-white">Domain Verification</h3>
           <p class="text-xs text-slate-400">
-            Verify domain ownership to unlock custom marketplace integrations.
+            Verify domain ownership to enable authorization.
           </p>
 
           <!-- Step 1 Form: Enter Domain & Generate Token -->
           <form
-            hx-post="/api/market/generate-token"
+            hx-post="/api/generate-token"
             hx-target="#verification-step-2"
             hx-swap="innerHTML"
             class="flex gap-2"
@@ -71,14 +73,14 @@
             <input
               type="text"
               name="domain"
-              placeholder="mysite.com"
+              placeholder="yoursite.whatever"
               required
               class="flex-1 bg-slate-800 border border-slate-700 text-white text-xs p-2.5 rounded focus:outline-none focus:border-emerald-500"
             />
 
             <button
               type="submit"
-              class="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded transition"
+              class="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-2 md:px-4 py-2.5 rounded transition"
             >
               Generate Code
             </button>
@@ -99,6 +101,25 @@
       <section
         class="bg-slate-800/50 p-6 rounded-xl border border-slate-800 mb-8"
       >
+          <div class="flex justify-between items-center">
+        <span class="text-slate-400">Current Plan:</span>
+        <span class="font-bold text-emerald-400 uppercase"><%= user.planTier %></span>
+    </div>
+          <% if (user.planTier === 'free') { %>
+        <div class="space-y-1 pt-2 border-t border-slate-700">
+            <div class="flex justify-between text-slate-300 text-sm">
+                <span>Verified Domains:</span>
+                <span><%= user.verifiedDomainsCount %> / 1</span>
+            </div>
+            <!-- <div class="flex justify-between text-slate-300">
+                <span>Strategy Generations:</span>
+                <span><%= user.saasGenerationsCount %> / 1</span>
+            </div> -->
+        </div>
+        <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
+            Upgrade Plan
+        </a>
+    <% } %>
         <h2 class="text-xl font-bold mb-2 text-cyan-400">
           Analyze Your SaaS Landing Page
         </h2>
@@ -110,14 +131,14 @@
         </p>
 
         <form
-          hx-post="/api/market/analyze"
+          hx-post="/api/analyze"
           hx-target="#strategy-output"
           hx-indicator="#loading-spinner"
           class="space-y-4"
         >
           <div>
             <label class="block text-sm font-medium mb-2 text-slate-300"
-              >Target SaaS URL</label
+              >Enter verified domain</label
             >
             <input
               type="url"
@@ -129,9 +150,10 @@
           </div>
           <button
             type="submit"
-            class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 p-3 rounded-lg text-white font-bold transition shadow-lg flex justify-center items-center gap-2"
+            class="w-full bg-gradient-to-r from-green-600 to-lime-500 hover:from-lime-600 hover:to-green-600 p-3 rounded-lg text-slate-950 font-bold transition shadow-lg flex justify-center items-center gap-2"
           >
-            <span>🚀 Generate Go-To-Market Plan</span>
+            <!-- <span>⚙ ⛏️ ⚙️Generate Plan</span> -->
+            <span>⚙️ Generate Plan</span>
           </button>
         </form>
 
@@ -161,7 +183,7 @@
             ></path>
           </svg>
           <span
-            >Crawling site content and running LangChain marketing
+            >Crawling site content and running strategy
             agent...</span
           >
         </div>
@@ -171,9 +193,10 @@
       <section class="space-y-4">
         <!-- Output Header & Export Controls (Hidden by default, shown via HTMX event) -->
         <div
-          id="export-toolbar"
-          class="hidden justify-between items-center bg-slate-800/80 p-4 rounded-xl border border-slate-700"
+        id="export-toolbar"
+        class="hidden justify-between items-center bg-slate-800/80 p-4 rounded-xl border border-slate-700"
         >
+        <% if (user.planTier === 'starter' || user.planTier === 'pro') { %>
           <span class="text-sm font-semibold text-slate-300"
             >📊 Marketing Roadmap Ready</span
           >
@@ -191,6 +214,10 @@
               📥 Download PDF
             </button>
           </div>
+          <% } else { %>
+            <span class="p-2 text-sm text-red-600 font-semibold">No download feature available on free tier</span>
+            <% } %>
+            <span class="p-2 text-sm text-slate-600 font-semibold">Copy/Download the generated roadmap before leaving this page. Otherwise, you'll need to regenerate it.</span>
         </div>
 
         <div id="strategy-output" class="min-h-[200px]">

@@ -17,7 +17,18 @@
     </style>
   </head>
   <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+    <!-- <div
+      class="max-w-2xl mx-auto bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl space-y-6 text-slate-200"
+    > -->
     <div class="max-w-4xl mx-auto py-12 px-4">
+      <!-- <div>
+        <h2 class="text-2xl font-bold text-white">
+          ⚡ FaastSaaS Boilerplate Generator
+        </h2>
+        <p class="text-slate-400 text-sm mt-1">
+          Get your Express + HTMX stack and download your codebase.
+        </p>
+      </div> -->
       <header
         class="mb-12 border-b border-slate-800 pb-6 flex justify-between items-center"
       >
@@ -28,168 +39,169 @@
             ⚡faastsaas
           </h1>
           <p class="text-slate-400 mt-2 text-xs md:text-lg">
-            Quick SaaS Scaffold Generator.
+            Get your Express + HTMX stack and download your codebase.
           </p>
         </div>
-        <a
-          href="/index"
-          class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition"
-        >
-          📈 AI Marketing Strategist →
-        </a>
+        <div class="flex flex-col md:flex-row md:mx-auto">
+          <a
+            href="/index"
+            class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 px-4 py-2.5 m-2 rounded-xl font-semibold text-xs md:text-sm transition"
+          >
+            📈 AI Strategist →
+          </a>
+          <a
+            href="/logout"
+            class="bg-cyan-600/20 hover:bg-cyan-600/30 text-red-400 border border-cyan-500/30 p-2 text-center md:py-4 rounded-lg font-semibold text-xs md:text-sm transition"
+          >
+            Logout
+          </a>
+        </div>
       </header>
+                <div class="flex justify-between items-center">
+        <span class="text-slate-400">Current Plan:</span>
+        <span class="font-bold text-emerald-400 uppercase"><%= user.planTier %></span>
+    </div>
+          <% if (user.planTier === 'free') { %>
+        <div class="space-y-1 pt-2 border-t border-slate-700">
+            <div class="flex justify-between text-slate-300 text-sm">
+                <span>Available Boilerplates:</span>
+                <span><%= user.saasGenerationsCount %> / 2</span>
+            </div>
+            <!-- <div class="flex justify-between text-slate-300">
+                <span>Strategy Generations:</span>
+                <span><%= user.saasGenerationsCount %> / 1</span>
+            </div> -->
+        </div>
+        <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
+            Upgrade Plan
+        </a>
+    <% } %>
 
-      <a
-        href="/"
-        class="bg-cyan-600/20 hover:bg-cyan-600/30 text-red-400 border border-cyan-500/30 p-2 rounded-lg font-semibold text-sm transition"
-      >
-        Logout
-      </a>
+      <form action="/api/generate" method="POST" class="space-y-5">
+        <!-- App Name Input -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase text-slate-400 mb-1"
+            >Application Name</label
+          >
+          <input
+            type="text"
+            name="appName"
+            required
+            value="MyAwesomeSaaS"
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
 
-      <form
-        action="/api/generate"
-        method="POST"
-        id="gen-form"
-        onsubmit="triggerDownloadUI()"
-        class="space-y-8"
-      >
-        <!-- 1. Core Settings Section -->
-        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-          <h2 class="text-xl font-bold mb-4 text-emerald-400">1. Core Setup</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-sm font-medium mb-2 text-slate-300"
-                >Project Engine Name</label
-              >
-              <input
-                type="text"
-                name="projectName"
-                value="my-saas-platform"
-                class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-emerald-500 text-white"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-2 text-slate-300"
-                >Core Engine Architecture</label
-              >
-              <select
-                name="runtime"
-                class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white"
-              >
-                <option value="node-express">
-                  NodeJS + ExpressJS (Default Stable)
-                </option>
-                <option value="bun-hono">
-                  Bun + Hono (High Performance API)
-                </option>
-                <option value="bun-elysia">
-                  Bun + Elysia (TypeScript First)
-                </option>
-              </select>
-              <p class="text-xs text-slate-400 mb-4">
-                After you download &amp; unzip, remember to run *npm install* or
-                *bun install* before you run the project the first time.
-              </p>
-            </div>
-          </div>
-        </section>
+        <!-- Payment Engine Selection -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase text-slate-400 mb-1"
+            >Billing / Payments Engine</label
+          >
+          <select
+            name="paymentEngine"
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+          >
+            <option value="stripe">Stripe Checkout & Billing</option>
+            <option value="lemonSqueezy">Lemon Squeezy</option>
+            <option value="paddle">Paddle</option>
+          </select>
+        </div>
 
-        <!-- 2. Storage & Identity Layer Section -->
-        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-          <h2 class="text-xl font-bold mb-4 text-cyan-400">
-            2. Storage, Identity & Subscription Layers
-          </h2>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium mb-2 text-slate-300"
-                >MongoDB Connection Target String</label
-              >
-              <input
-                type="text"
-                name="dbUri"
-                value="mongodb://localhost:27017/saas-db"
-                class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-slate-300 text-sm"
-              />
-              <p class="text-xs text-slate-500 mt-1">
-                Accepts local instances or MongoDB Atlas Connection Strings
-                cleanly. Also replace the MONGO_URI value in your project's
-                *.env.example* file, after you download the zip, for safety.
-              </p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-2 text-slate-300"
-                >SaaS Production Billing Engine Infrastructure
-                Integration</label
-              >
-              <select
-                name="paymentProvider"
-                class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white font-semibold"
-              >
-                <option value="stripe">
-                  Stripe (Global Subscriptions - Default)
-                </option>
-                <option value="paystack">
-                  Paystack (African Markets Optimization Matrix)
-                </option>
-                <option value="paddle">
-                  Paddle (Merchant of Record Global Billing Layer)
-                </option>
-              </select>
-            </div>
-            <div
-              class="bg-slate-900/40 p-4 rounded border border-slate-800 text-sm space-y-2"
+        <!-- Database Type Selection Toggle -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase text-slate-400 mb-2"
+            >Database Provider Choice</label
+          >
+          <div class="grid grid-cols-2 gap-4">
+            <label
+              class="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer hover:border-slate-600"
             >
-              <div
-                class="flex items-center text-emerald-400 font-normal md:font-medium"
-              >
-                ✓ User Authentication Suite (Registration, Login Session JWT,
-                Secure Cryptography)
+              <input
+                type="radio"
+                name="dbType"
+                value="mongodb"
+                checked
+                onclick="toggleDBFields('mongodb')"
+                class="text-emerald-500 focus:ring-0"
+              />
+              <div>
+                <div class="text-sm font-semibold text-white">
+                  MongoDB Atlas
+                </div>
+                <div class="text-xs text-slate-400">
+                  Document Store / Mongoose
+                </div>
               </div>
-              <div
-                class="flex items-center text-emerald-400 font-normal md:font-medium"
-              >
-                ✓ Scaffolding Core Module: Full Rails-style CRUD Element Stream
-                Dashboard
+            </label>
+
+            <label
+              class="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer hover:border-slate-600"
+            >
+              <input
+                type="radio"
+                name="dbType"
+                value="supabase"
+                onclick="toggleDBFields('supabase')"
+                class="text-emerald-500 focus:ring-0"
+              />
+              <div>
+                <div class="text-sm font-semibold text-white">Supabase</div>
+                <div class="text-xs text-slate-400">
+                  PostgreSQL / Supabase-JS
+                </div>
               </div>
-            </div>
+            </label>
           </div>
-        </section>
+        </div>
 
-        <!-- 3. Custom Data Models Section -->
-        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-          <h2 class="text-xl font-bold mb-2 text-amber-400">
-            3. Custom Data Models
-          </h2>
-          <p class="text-xs text-slate-400 mb-4">
-            FaastSaaS provides you with default Users and Items models as a ToDo
-            List stub. Define your own models as you require in your project.
-          </p>
-        </section>
+        <!-- Dynamic MongoDB Configuration Input -->
+        <div id="mongo-fields" class="space-y-2">
+          <label class="block text-xs font-semibold uppercase text-slate-400"
+            >MongoDB Connection String</label
+          >
+          <input
+            type="text"
+            id="mongoUrl"
+            name="mongoUrl"
+            required
+            placeholder="mongodb+srv://user:pass@cluster.mongodb.net/dbname"
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
+          />
+        </div>
 
-        <!-- 4. UI Presentation Section -->
-        <section class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-          <h2 class="text-xl font-bold mb-4 text-purple-400">
-            4. Client Presentation UI
-          </h2>
+        <!-- Dynamic Supabase Configuration Inputs -->
+        <div id="supabase-fields" class="space-y-4 hidden">
           <div>
-            <label class="block text-sm font-medium mb-2 text-slate-300"
-              >CSS Compilation Layer Framework</label
+            <label
+              class="block text-xs font-semibold uppercase text-slate-400 mb-1"
+              >Supabase Project URL</label
             >
-            <select
-              name="cssFramework"
-              class="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white"
-            >
-              <option value="tailwindcss">
-                TailwindCSS (Configured CDN Injection Utility)
-              </option>
-              <option value="bootstrap5">
-                Bootstrap 5 (Responsive Components Standard)
-              </option>
-            </select>
+            <input
+              type="text"
+              id="supabaseUrl"
+              name="supabaseUrl"
+              placeholder="https://your-project-id.supabase.co"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
+            />
           </div>
-        </section>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase text-slate-400 mb-1"
+              >Supabase Anon / Service Key</label
+            >
+            <input
+              type="password"
+              id="supabaseKey"
+              name="supabaseKey"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR..."
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
 
-        <!-- Submit Engine Layout Trigger Controls -->
         <div class="pt-4 relative">
           <div
             id="status-toast"
@@ -198,20 +210,18 @@
             ✨ Packing authentication framework, database models, partial views,
             and subscription modules... Your download will begin instantly.
           </div>
-
+          <!-- Submit Action -->
           <button
             type="submit"
             id="submit-btn"
-            disabled
-            class="w-full bg-gradient-to-r from-green-700 to-green-500 p-4 rounded-xl text-sm md:text-lg font-bold shadow-xl tracking-wide transition transform active:scale-95 flex justify-center items-center gap-3"
+            class="w-full bg-gradient-to-r from-green-700 to-green-500 hover:from-lime-600 hover:to-green-600 text-slate-950 font-bold shadow-xl tracking-wide transition transform active:scale-95 p-4 rounded-xl text-sm md:text-lg rounded-lg transition flex justify-center items-center gap-3"
           >
-            <span id="btn-text"
-              >📦 Generate & Download Full SaaS Boilerplate Source (.zip)</span
-            >
+            <span id="btn-text">📦 Download Boilerplate (.zip)</span>
           </button>
         </div>
       </form>
     </div>
+
     <!--FOOTER-->
     <footer
       class="bottom-0 left-0 z-20 w-full p-4 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
@@ -237,6 +247,47 @@
     </footer>
 
     <script>
+      // function toggleDBFields(dbType) {
+      //   const mongoFields = document.getElementById("mongo-fields");
+      //   const supabaseFields = document.getElementById("supabase-fields");
+
+      //   if (dbType === "mongodb") {
+      //     mongoFields.classList.remove("hidden");
+      //     supabaseFields.classList.add("hidden");
+      //   } else {
+      //     mongoFields.classList.add("hidden");
+      //     supabaseFields.classList.remove("hidden");
+      //   }
+      // }
+      function toggleDBFields(dbType) {
+        const mongoFields = document.getElementById("mongo-fields");
+        const supabaseFields = document.getElementById("supabase-fields");
+
+        const mongoInput = document.getElementById("mongoUrl");
+        const supabaseUrl = document.getElementById("supabaseUrl");
+        const supabaseKey = document.getElementById("supabaseKey");
+
+        if (dbType === "mongodb") {
+          // Show Mongo, hide Supabase
+          mongoFields.classList.remove("hidden");
+          supabaseFields.classList.add("hidden");
+
+          // Set required on visible inputs only
+          mongoInput.required = true;
+          supabaseUrl.required = false;
+          supabaseKey.required = false;
+        } else {
+          // Show Supabase, hide Mongo
+          mongoFields.classList.add("hidden");
+          supabaseFields.classList.remove("hidden");
+
+          // Set required on visible inputs only
+          mongoInput.required = false;
+          supabaseUrl.required = true;
+          supabaseKey.required = true;
+        }
+      }
+
       function triggerDownloadUI() {
         const btn = document.getElementById("submit-btn");
         const text = document.getElementById("btn-text");

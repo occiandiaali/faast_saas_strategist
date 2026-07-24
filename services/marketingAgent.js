@@ -7,13 +7,17 @@ const { StringOutputParser } = require("@langchain/core/output_parsers");
  * Fetch and extract text content + verify domain authorization token
  */
 async function crawlSaaSWebsite(targetUrl, user) {
-  const parsedUrl = new URL(targetUrl);
-  const domainHost = parsedUrl.origin.toLowerCase();
+  // const parsedUrl = new URL(targetUrl);
+  // const domainHost = parsedUrl.origin.toLowerCase();
 
-  // 1. Check if user already verified this domain previously
-  const isAlreadyVerified = user.verifiedUrls.some(
-    (u) => u.toLowerCase() === domainHost,
-  );
+  // console.log(`parsedUrl: ${parsedUrl} -> ${parsedUrl.length}`);
+  // console.log(`targetUrl: ${targetUrl} -> ${targetUrl.length}`);
+  // console.log(`domainHost: ${domainHost}`);
+
+  // // 1. Check if user already verified this domain previously
+  // const isAlreadyVerified = user.verifiedUrls.some(
+  //   (u) => u.toLowerCase() === domainHost,
+  // );
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -31,21 +35,21 @@ async function crawlSaaSWebsite(targetUrl, user) {
   const html = await response.text();
   const $ = cheerio.load(html);
 
-  // Check meta verification token if domain isn't already saved
-  if (!isAlreadyVerified) {
-    const foundToken = $('meta[name="faastsaas-verification"]').attr("content");
+  // // Check meta verification token if domain isn't already saved
+  // if (!isAlreadyVerified) {
+  //   const foundToken = $('meta[name="faastsaas-verification"]').attr("content");
 
-    if (foundToken !== user.verificationToken) {
-      const verificationError = new Error("DOMAIN_UNAUTHORIZED");
-      verificationError.metaRequired = `<meta name="faastsaas-verification" content="${user.verificationToken}">`;
-      verificationError.domainHost = domainHost;
-      throw verificationError;
-    }
+  //   if (foundToken !== user.verificationToken) {
+  //     const verificationError = new Error("DOMAIN_UNAUTHORIZED");
+  //     verificationError.metaRequired = `<meta name="faastsaas-verification" content="${user.verificationToken}">`;
+  //     verificationError.domainHost = domainHost;
+  //     throw verificationError;
+  //   }
 
-    // Token found! Save to verified list
-    user.verifiedUrls.push(domainHost);
-    await user.save();
-  }
+  //   // Token found! Save to verified list
+  //   user.verifiedUrls.push(domainHost);
+  //   await user.save();
+  // }
 
   $("script, style, nav, footer, svg, iframe").remove();
 
@@ -76,7 +80,7 @@ async function generateMarketingStrategy(targetUrl, user) {
   // Tailor instructions based on tier
   const tierInstructions = isFreeTier
     ? `NOTE: The user is on the FREE TIER. Provide a MINIMAL, condensed summary with only 1 concise bullet point per section. At the end, add a small CTA notice encouraging them to upgrade to Pro for deep-dive messaging angles and a full 4-week roadmap.`
-    : `Provide a DETAILED, comprehensive marketing strategy with full 4-week execution steps and deep ICP breakdowns.`;
+    : `Provide a DETAILED, comprehensive marketing strategy with full 4-week execution steps, SEO or effective discoverability advice, and deep ICP breakdowns.`;
 
   const prompt = `
 You are an expert SaaS Growth Lead and Marketing Strategist.
@@ -97,7 +101,7 @@ FORMAT YOUR RESPONSE AS HTML (using Tailwind classes, no html/body wrapper):
       isFreeTier
         ? `
         <div class="bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs p-3 rounded-lg flex items-center justify-between">
-            <span>⚡ <strong>Free Tier Preview</strong> — Upgrade to Pro for deep-dive analysis & full execution roadmap.</span>
+            <span>⚡ <strong>Free Tier Preview</strong> — Upgrade to Starter/Pro for deep-dive analysis & full execution roadmap.</span>
             <a href="/pricing" class="bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold hover:bg-emerald-300 transition">Upgrade</a>
         </div>
     `

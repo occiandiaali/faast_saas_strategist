@@ -36,9 +36,8 @@ const userSchema = new mongoose.Schema(
     },
     // Usage counters
     verifiedDomainsCount: { type: Number, default: 0 },
-    // saasGenerationsCount: { type: Number, default: 0 },
-    // User Schema field addition
-
+    saasGenerationsCount: { type: Number, default: 0 },
+    // Latest addition
     pendingDomain: { type: String, default: null },
     domainVerificationToken: { type: String, default: null },
   },
