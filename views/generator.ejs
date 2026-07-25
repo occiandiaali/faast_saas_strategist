@@ -77,7 +77,7 @@
         </a>
     <% } %>
 
-      <form action="/api/generate" method="POST" class="space-y-5">
+      <form action="/api/generate" method="POST" id="gen-form" onsubmit="triggerDownloadUI()" class="space-y-8">
         <!-- App Name Input -->
         <div>
           <label
@@ -115,6 +115,7 @@
             class="block text-xs font-semibold uppercase text-slate-400 mb-2"
             >Database Provider Choice</label
           >
+          <span class="text-sm text-slate-500 p-2">Don't forget to run `npm install` after you unzip your project.</span>
           <div class="grid grid-cols-2 gap-4">
             <label
               class="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer hover:border-slate-600"
@@ -137,6 +138,7 @@
               </div>
             </label>
 
+            <% if (user.planTier === 'pro') { %> 
             <label
               class="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer hover:border-slate-600"
             >
@@ -154,6 +156,7 @@
                 </div>
               </div>
             </label>
+            <% } %>
           </div>
         </div>
 
@@ -247,18 +250,7 @@
     </footer>
 
     <script>
-      // function toggleDBFields(dbType) {
-      //   const mongoFields = document.getElementById("mongo-fields");
-      //   const supabaseFields = document.getElementById("supabase-fields");
 
-      //   if (dbType === "mongodb") {
-      //     mongoFields.classList.remove("hidden");
-      //     supabaseFields.classList.add("hidden");
-      //   } else {
-      //     mongoFields.classList.add("hidden");
-      //     supabaseFields.classList.remove("hidden");
-      //   }
-      // }
       function toggleDBFields(dbType) {
         const mongoFields = document.getElementById("mongo-fields");
         const supabaseFields = document.getElementById("supabase-fields");

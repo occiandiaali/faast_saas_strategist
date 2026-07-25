@@ -45,7 +45,7 @@ const checkGenerationLimit = (req, res, next) => {
                     🔒 Free Tier Limit Reached
                 </div>
                 <p class="text-xs mb-3 text-amber-300/80">
-                    You've used your 2 free SaaS projects generation. Get Starter/Pro plans now to unlock more.
+                    You've reached your limit on free SaaS projects generation. Get Starter/Pro plans now to unlock more.
                 </p>
                 <a href="/pricing" class="inline-block bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold px-3 py-1.5 rounded transition">
                     Upgrade Now →

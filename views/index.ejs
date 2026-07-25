@@ -120,7 +120,7 @@
             Upgrade Plan
         </a>
     <% } %>
-        <h2 class="text-xl font-bold mb-2 text-cyan-400">
+        <!-- <h2 class="text-xl font-bold mb-2 text-cyan-400">
           Analyze Your SaaS Landing Page
         </h2>
         <p class="text-sm text-slate-400 mb-6">
@@ -128,6 +128,14 @@
           <code class="text-amber-300">http://localhost:3000</code>) or a
           deployed live URL. Our crawler will analyze your page and generate a
           tailored go-to-market plan.
+        </p> -->
+        <h2 class="text-xl font-bold mb-2 text-cyan-400">
+          Analyze Your Verified Domain
+        </h2>
+        <p class="text-sm text-slate-400 mb-6">
+          Enter/Paste the verified URL from above. 
+          Our crawler will analyze your page and generate a
+          go-to-market plan.
         </p>
 
         <form
@@ -140,10 +148,17 @@
             <label class="block text-sm font-medium mb-2 text-slate-300"
               >Enter verified domain</label
             >
-            <input
+            <!-- <input
               type="url"
               name="url"
               placeholder="http://localhost:3000 or https://my-saas.com"
+              required
+              class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-cyan-500 text-white text-sm"
+            /> -->
+          <input
+              type="url"
+              name="url"
+              placeholder="Enter your verified URL here.."
               required
               class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-cyan-500 text-white text-sm"
             />

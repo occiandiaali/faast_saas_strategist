@@ -3,7 +3,8 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const archiver = require("archiver");
+const { ZipArchive } = require("archiver");
+
 const crypto = require("crypto"); // For domain verification token generation
 const https = require("https");
 const http = require("http"); // For /api/generate-token and /api/verify-domain endpoints
@@ -338,7 +339,7 @@ app.post(
 
       return res.send(`
             <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-200 p-3 rounded-lg text-xs flex items-center justify-between">
-                <span>✅ Domain <strong>${targetUrl}</strong> successfully verified!</span>
+                <span>✅ Domain <strong>${targetUrl}</strong> successfully verified! Copy & paste it in the field below.</span>
             </div>
         `);
     } catch (err) {
@@ -353,122 +354,140 @@ app.post(
 
 //==================================
 
-app.post(
-  "/api/analyze",
-  authMiddleware,
-  checkGenerationLimit,
-  async (req, res) => {
-    try {
-      // // 1. Support targetUrl, domain, or url form input names
-      //const rawUrl = req.body.url;
-      console.log(`req.body.url: ${req.body.url}`);
+app.post("/api/analyze", authMiddleware, checkDomainLimit, async (req, res) => {
+  try {
+    // // 1. Support targetUrl, domain, or url form input names
+    //const rawUrl = req.body.url;
+    console.log(`req.body.url: ${req.body.url}`);
 
-      if (req.user.verifiedUrls.includes(req.body.url)) {
-        // 3. Generate strategy using the formatted URL & user context
-        const strategyHtml = await generateMarketingStrategy(
-          req.body.url,
-          req.user,
-        );
+    if (req.user.verifiedUrls.includes(req.body.url)) {
+      // 3. Generate strategy using the formatted URL & user context
+      const strategyHtml = await generateMarketingStrategy(
+        req.body.url,
+        req.user,
+      );
 
-        // 4. FIX: Increment generation/usage count (NOT verified domains count)
-        req.user.saasGenerationsCount =
-          (req.user.saasGenerationsCount || 0) + 1;
-        await req.user.save();
-
-        return res.send(strategyHtml);
-      }
-    } catch (err) {
-      return res.send(`
+      return res.send(strategyHtml);
+    }
+  } catch (err) {
+    return res.send(`
         <div class="bg-red-900/40 border border-red-700/60 text-red-200 text-xs p-3 rounded-lg">
           Analysis failed: ${err.message}
         </div>
       `);
-    }
-  },
-);
+  }
+});
+
 //=== BOILERPLATE GENERATOR
-app.post("/api/generate", authMiddleware, async (req, res) => {
-  try {
-    const {
-      appName = "MySaaSApp",
-      paymentEngine = "stripe", // 'stripe' | 'lemonSqueezy' | 'paddle'
-      dbType = "mongodb", // 'mongodb' | 'supabase'
-      mongoUrl = "",
-      supabaseUrl = "",
-      supabaseKey = "",
-    } = req.body;
+app.post(
+  "/api/generate",
+  authMiddleware,
+  checkGenerationLimit,
+  async (req, res) => {
+    try {
+      const {
+        appName = "MySaaSApp",
+        paymentEngine = "stripe", // 'stripe' | 'lemonSqueezy'
+        dbType = "mongodb", // 'mongodb' | 'supabase'
+        mongoUrl = "",
+        supabaseUrl = "",
+        supabaseKey = "",
+      } = req.body;
 
-    const sanitizedAppName = appName.replace(/[^a-zA-Z0-9_-]/g, "");
-    const isMongo = dbType === "mongodb";
+      const sanitizedAppName = appName.replace(/[^a-zA-Z0-9_-]/g, "");
+      const isMongo = dbType === "mongodb";
 
-    // Prepare dynamic archive
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    res.attachment(`${sanitizedAppName.toLowerCase()}-boilerplate.zip`);
-    archive.pipe(res);
+      // Set response headers for zip download
+      res.attachment(`${sanitizedAppName.toLowerCase()}-boilerplate.zip`);
 
-    // 1. package.json
-    const packageJson = {
-      name: sanitizedAppName.toLowerCase(),
-      version: "1.0.0",
-      description:
-        "Generated Express NodeJS + EJS + HTMX + TailwindCSS SaaS Boilerplate",
-      main: "server.js",
-      scripts: {
-        start: "node server.js",
-        dev: "nodemon server.js",
-      },
-      dependencies: {
-        express: "^4.19.2",
-        ejs: "^3.1.10",
-        dotenv: "^16.4.5",
-        "express-session": "^1.18.0",
-        bcryptjs: "^2.4.3",
-        ...(isMongo
-          ? { mongoose: "^8.3.0", "connect-mongo": "^5.1.0" }
-          : { "@supabase/supabase-js": "^2.48.0" }),
-      },
-      devDependencies: {
-        nodemon: "^3.1.0",
-        tailwindcss: "^3.4.3",
-      },
-    };
-    archive.append(JSON.stringify(packageJson, null, 2), {
-      name: "package.json",
-    });
+      // Instantiate ZipArchive
+      const archive = new ZipArchive({ zlib: { level: 9 } });
+      archive.pipe(res);
 
-    // 2. .env configuration template
-    const envContent = `
-PORT=3000
-SESSION_SECRET=${Math.random().toString(36).substring(2)}${Date.now()}
-PAYMENT_ENGINE=${paymentEngine}
-${
-  isMongo
-    ? `MONGO_URI=${mongoUrl || "mongodb+srv://<username>:<password>@cluster.mongodb.net/mySaaS"}`
-    : `SUPABASE_URL=${supabaseUrl || "https://your-project.supabase.co"}\nSUPABASE_KEY=${supabaseKey || "your-supabase-anon-or-service-key"}`
-}
-`;
-    archive.append(envContent.trim(), { name: ".env" });
+      // ---------------------------------------------------------
+      // 1. package.json (Minimal Dependencies)
+      // ---------------------------------------------------------
+      const packageJson = {
+        name: sanitizedAppName.toLowerCase(),
+        version: "0.0.1",
+        description:
+          "Minimal Express + EJS + HTMX + TailwindCSS SaaS Boilerplate",
+        main: "server.js",
+        scripts: {
+          start: "node server.js",
+          dev: "node --watch server.js",
+        },
+        dependencies: {
+          express: "^5.2.1",
+          dotenv: "^17.4.2",
+          ejs: "^6.0.1",
+          "cookie-parser": "^1.4.7",
+          jsonwebtoken: "^9.0.3",
 
-    // 3. Database & Auth Module (db.js / auth.js)
-    let dbFileContent = "";
-    if (isMongo) {
-      dbFileContent = `
+          ...(isMongo
+            ? { mongoose: "^9.8.0", bcryptjs: "^3.0.3" }
+            : { "@supabase/supabase-js": "^2.110.7" }),
+          ...(paymentEngine === "stripe" ? { stripe: "^22.3.2" } : {}),
+        },
+      };
+      archive.append(JSON.stringify(packageJson, null, 2), {
+        name: "package.json",
+      });
+
+      // ---------------------------------------------------------
+      // 2. .env Template
+      // ---------------------------------------------------------
+      const envContent = `
+      PORT=3000
+      JWT_SECRET=${Math.random().toString(36).substring(2)}${Date.now()}
+      PAYMENT_ENGINE=${paymentEngine}
+      STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+      LEMONSQUEEZY_API_KEY=your_lemonsqueezy_api_key_here
+      ${
+        isMongo
+          ? `MONGO_URI=${mongoUrl || "mongodb+srv://<username>:<password>@cluster.mongodb.net/mySaaS"}`
+          : `SUPABASE_URL=${supabaseUrl || "https://your-project.supabase.co"}\nSUPABASE_KEY=${supabaseKey || "your-supabase-anon-key"}`
+      }
+    `;
+      archive.append(envContent.trim(), { name: ".env" });
+      const envContentExample = `
+      JWT_SECRET=your_jsonwebtoken_secret
+      PORT=the_running_server_port
+      STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+      LEMONSQUEEZY_API_KEY=your_lemonsqueezy_api_key_here
+      PAYMENT_ENGINE=${paymentEngine}
+      ${
+        isMongo
+          ? `MONGO_URI="mongodb+srv://<username>:<password>@cluster.mongodb.net/mySaaS"`
+          : `SUPABASE_URL="https://your-project.supabase.co"\nSUPABASE_KEY="your-supabase-anon-or-service-key"`
+      }
+    `;
+
+      archive.append(envContentExample.trim(), { name: ".env.example" });
+
+      const gitIgnorance = `node_modules/\n.env\n.DS_Store\n*.log`;
+      archive.append(gitIgnorance.trim(), { name: ".gitignore" });
+
+      // ---------------------------------------------------------
+      // 3. Database Module (config/db.js)
+      // ---------------------------------------------------------
+      const dbFileContent = isMongo
+        ? `
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB Atlas connected successfully.');
+    console.log('✅ MongoDB connected successfully.');
   } catch (err) {
-    console.error('MongoDB connection error:', err.message);
+    console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
   }
 };
 
 module.exports = connectDB;
-`;
-    } else {
-      dbFileContent = `
+`
+        : `
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -478,176 +497,457 @@ const supabase = createClient(
 
 module.exports = supabase;
 `;
-    }
-    archive.append(dbFileContent.trim(), { name: "config/db.js" });
+      archive.append(dbFileContent.trim(), { name: "config/db.js" });
 
-    // 4. Main server.js Entry Point
-    const serverJsContent = `
-require('dotenv').config();
-const express = require('express');
-const session = require('express-session');
-const path = require('path');
-const bcrypt = require('bcryptjs');
+      // ---------------------------------------------------------
+      // 4. User Model for MongoDB (models/User.js)
+      // ---------------------------------------------------------
+      if (isMongo) {
+        const userModelContent = `
+          const mongoose = require('mongoose');
+          const bcrypt = require('bcryptjs');
 
-${isMongo ? `const connectDB = require('./config/db.js');\nconst MongoStore = require('connect-mongo');` : `const supabase = require('./config/db.js');`}
+          const userSchema = new mongoose.Schema({
+            email: { type: String, required: true, unique: true, lowercase: true },
+            password: { type: String, required: true },
+            isSubscribed: { type: Boolean, default: false },
+            customerId: String,
+            subscriptionId: String,
+            createdAt: { type: Date, default: Date.now }
+          });
 
-const app = express();
+          userSchema.pre('save', async function () {
+            if (!this.isModified('password')) return;
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+          });
 
-${isMongo ? `// Connect Database\nconnectDB();` : ``}
+          userSchema.methods.comparePassword = async function (candidatePassword) {
+            return await bcrypt.compare(candidatePassword, this.password);
+          };
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+          module.exports = mongoose.model('User', userSchema);
+      `;
+        archive.append(userModelContent.trim(), { name: "models/User.js" });
+      }
 
-// EJS View Engine Setup
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+      // ---------------------------------------------------------
+      // 5. Main server.js Entry Point
+      // ---------------------------------------------------------
+      const serverJsContent = `
+    require('dotenv').config();
+    const express = require('express');
+    const cookieParser = require('cookie-parser');
+    const path = require('path');
+    const jwt = require('jsonwebtoken');
 
-// Session Setup
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  ${isMongo ? `store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),` : ``}
-  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 24 Hours
-}));
+    ${isMongo ? `const connectDB = require('./config/db.js');\nconst User = require('./models/User.js');` : `const supabase = require('./config/db.js');`}
+    ${paymentEngine === "stripe" ? `const Stripe = require('stripe');\nconst stripe = Stripe(process.env.STRIPE_SECRET_KEY);` : ``}
 
-// Global Template Middleware
+    const app = express();
+
+    ${isMongo ? `connectDB();` : ``}
+
+    // Middleware
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use(cookieParser());
+    app.use(express.static(path.join(__dirname, 'public')));
+
+    // EJS Setup
+    app.set('view engine', 'html');
+    app.engine('html', require('ejs').renderFile);
+    app.set('views', path.join(__dirname, 'views'));
+
+// JWT Auth Middleware
+const authMiddleware = async (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) return res.redirect('/login');
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    res.locals.user = decoded;
+    next();
+  } catch (err) {
+    res.clearCookie('token');
+    return res.redirect('/login');
+  }
+};
+
+// Global Template Vars
 app.use((req, res, next) => {
   res.locals.appName = "${sanitizedAppName}";
   res.locals.paymentEngine = "${paymentEngine}";
-  res.locals.user = req.session.user || null;
-  next();
-});
-
-// Authentication Middleware
-const requireAuth = (req, res, next) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
+  res.locals.user = null;
+  
+  if (req.cookies.token) {
+    try {
+      res.locals.user = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
+    } catch(e) {}
   }
   next();
-};
-
-// --- ROUTES ---
-
-// Landing Page
-app.get('/', (req, res) => {
-  res.render('index');
 });
 
-// Login Page
-app.get('/login', (req, res) => {
-  res.render('login', { error: null });
+// --- PAGE ROUTES ---
+app.get('/', (req, res) => res.render('index.html'));
+app.get('/about', (req, res) => res.render('about.html'));
+app.get('/contact', (req, res) => res.render('contact.html'));
+app.get('/login', (req, res) => res.render('login.html', { error: null }));
+app.get('/signup', (req, res) => res.render('signup.html', { error: null }));
+app.get('/dashboard', authMiddleware, (req, res) => res.render('dashboard.html'));
+
+// --- AUTH API ROUTES ---
+app.post('/api/auth/signup', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    ${
+      isMongo
+        ? `
+    let existing = await User.findOne({ email });
+    if (existing) throw new Error("Email already registered.");
+    const user = await User.create({ email, password });
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    `
+        : `
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    const token = jwt.sign({ id: data.user.id, email: data.user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    `
+    }
+    res.cookie('token', token, { httpOnly: true, secure: false });
+    return res.header('HX-Redirect', '/dashboard').send();
+  } catch (err) {
+    return res.send(\`<div class="bg-red-900/50 border border-red-500 text-red-200 text-xs p-3 rounded-lg mt-3">\${err.message}</div>\`);
+  }
 });
 
-// Auth POST Handlers
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     ${
       isMongo
         ? `
-    // MongoDB User Auth Logic
-    // const user = await User.findOne({ email });
+    const user = await User.findOne({ email });
+    if (!user || !(await user.comparePassword(password))) {
+      throw new Error("Invalid email or password.");
+    }
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
     `
         : `
-    // Supabase Auth Logic
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    const token = jwt.sign({ id: data.user.id, email: data.user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
     `
     }
-    
-    // Mock user session binding
-    req.session.user = { email };
+    res.cookie('token', token, { httpOnly: true, secure: false });
     return res.header('HX-Redirect', '/dashboard').send();
   } catch (err) {
-    return res.send(\`<div class="text-red-500 text-xs mt-2">\${err.message || 'Invalid credentials'}</div>\`);
+    return res.send(\`<div class="bg-red-900/50 border border-red-500 text-red-200 text-xs p-3 rounded-lg mt-3">\${err.message}</div>\`);
   }
 });
 
 app.get('/logout', (req, res) => {
-  req.session.destroy();
+  res.clearCookie('token');
   res.redirect('/');
 });
 
-// Protected Dashboard Page
-app.get('/dashboard', requireAuth, (req, res) => {
-  res.render('dashboard');
-});
-
-// Protected Billing Hub Page
-app.get('/billing', requireAuth, (req, res) => {
-  res.render('billing');
+// --- PAYMENTS ROUTE ---
+app.post('/api/billing/checkout', authMiddleware, async (req, res) => {
+  try {
+    if (process.env.PAYMENT_ENGINE === 'stripe') {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: { name: '${sanitizedAppName} Pro Plan' },
+            unit_amount: 2900,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: \`http://localhost:\${process.env.PORT || 3000}/dashboard?status=success\`,
+        cancel_url: \`http://localhost:\${process.env.PORT || 3000}/dashboard?status=cancel\`,
+      });
+      return res.header('HX-Redirect', session.url).send();
+    } else {
+      // Lemon Squeezy / Alternative fallback implementation
+      return res.send('<div class="text-amber-400 text-sm">Lemon Squeezy Checkout URL generation ready. Insert your store link.</div>');
+    }
+  } catch (err) {
+    return res.send(\`<div class="text-red-400 text-xs mt-2">Payment Failed: \${err.message}</div>\`);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(\`⚡ ${sanitizedAppName} running on http://localhost:\${PORT}\`));
+app.listen(PORT, () => console.log(\`⚡ ${sanitizedAppName} listening at http://localhost:\${PORT}\`));
 `;
-    archive.append(serverJsContent.trim(), { name: "server.js" });
+      archive.append(serverJsContent.trim(), { name: "server.js" });
 
-    // 5. Views Setup (EJS Templates)
-    const headerPartial = `
+      // ---------------------------------------------------------
+      // 6. View Partials & Layout Pages
+      // ---------------------------------------------------------
+      const navPartial = `
+<nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <a href="/" class="text-xl font-black text-emerald-400 flex items-center gap-2">
+      <%= appName %>
+    </a>
+    <div class="flex items-center space-x-6 text-sm font-medium text-slate-300">
+      <a href="/about" class="hover:text-emerald-400 transition">About</a>
+      <a href="/contact" class="hover:text-emerald-400 transition">Contact</a>
+      <% if (user) { %>
+        <a href="/dashboard" class="text-emerald-400 font-semibold">Dashboard</a>
+        <a href="/logout" class="bg-red-900/30 text-red-300 border border-red-700/50 px-3 py-1.5 rounded-lg hover:bg-red-900/50 transition">Logout</a>
+      <% } else { %>
+        <a href="/login" class="hover:text-white transition">Sign In</a>
+        <a href="/signup" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 rounded-lg font-bold transition">Get Started</a>
+      <% } %>
+    </div>
+  </div>
+</nav>
+`;
+
+      const footerPartial = `
+<footer class="border-t border-slate-800 bg-slate-950 mt-auto py-10 text-slate-500 text-xs">
+  <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div>&copy; <%= new Date().getFullYear() %> <%= appName %>. All rights reserved.</div>
+    <div class="flex space-x-4">
+      <a href="/about" class="hover:text-slate-300">About</a>
+      <a href="/contact" class="hover:text-slate-300">Contact</a>
+      <a href="#" class="hover:text-slate-300">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+`;
+
+      const indexPage = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= appName %></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= appName %> | Build Faster</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
-    <nav class="border-b border-slate-800 p-4 flex justify-between items-center max-w-6xl mx-auto w-full">
-        <a href="/" class="text-xl font-bold text-emerald-400"><%= appName %></a>
-        <div class="space-x-4 text-sm">
-            <% if (user) { %>
-                <a href="/dashboard" class="hover:text-emerald-400">Dashboard</a>
-                <a href="/billing" class="hover:text-emerald-400">Billing (<%= paymentEngine %>)</a>
-                <a href="/logout" class="bg-red-600/30 text-red-300 border border-red-500/50 px-3 py-1 rounded">Logout</a>
-            <% } else { %>
-                <a href="/login" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded font-medium">Login</a>
-            <% } %>
+  <%- include('partials/nav.html') %>
+
+  <!-- Hero Section -->
+  <section class="py-24 max-w-5xl mx-auto text-center px-6 space-y-8">
+    <div class="inline-block bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs px-3 py-1 rounded-full">
+      Production-Ready SaaS Template
+    </div>
+    <h1 class="text-5xl md:text-6xl font-black text-white tracking-tight leading-tight">
+      Launch Your SaaS Product in <span class="text-emerald-400">Record Time</span>
+    </h1>
+    <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto">
+      Pre-configured authentication, database integration, subscription billing, and modern HTMX UI components out of the box.
+    </p>
+    <div class="flex justify-center gap-4 pt-4">
+      <a href="/signup" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-base px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition">Start Free Trial</a>
+      <a href="/about" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-base px-8 py-3.5 rounded-xl font-semibold border border-slate-700 transition">Learn More</a>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="py-16 bg-slate-950/50 border-t border-slate-800">
+    <div class="max-w-5xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-white mb-12">Simple, Transparent Pricing</h2>
+      <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl space-y-6">
+          <h3 class="text-xl font-bold text-white">Starter</h3>
+          <div class="text-4xl font-extrabold text-white">$9 <span class="text-sm font-normal text-slate-400">/mo</span></div>
+          <ul class="text-slate-400 text-sm space-y-3">
+            <li>✓ Essential Features</li>
+            <li>✓ Up to 1,000 active users</li>
+            <li>✓ Community Support</li>
+          </ul>
+          <a href="/signup" class="block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl border border-slate-700 transition">Get Started</a>
         </div>
-    </nav>
-    <main class="flex-1 max-w-6xl w-full mx-auto p-6">
-`;
-    const footerPartial = `
-    </main>
-    <footer class="border-t border-slate-800 p-6 text-center text-slate-500 text-xs">
-        &copy; <%= new Date().getFullYear() %> <%= appName %>. All rights reserved. Powered by ${isMongo ? "MongoDB" : "Supabase"}.
-    </footer>
+        <div class="bg-slate-900 border-2 border-emerald-500 p-8 rounded-2xl space-y-6 relative">
+          <span class="absolute -top-3 right-6 bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-1 rounded-full uppercase">Most Popular</span>
+          <h3 class="text-xl font-bold text-white">Pro Plan</h3>
+          <div class="text-4xl font-extrabold text-white">$29 <span class="text-sm font-normal text-slate-400">/mo</span></div>
+          <ul class="text-slate-400 text-sm space-y-3">
+            <li>✓ All Starter Features</li>
+            <li>✓ Unlimited Usage</li>
+            <li>✓ Priority Email Support</li>
+          </ul>
+          <a href="/signup" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition">Start Pro Trial</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer.html') %>
 </body>
 </html>
 `;
-    const indexView = `<%- include('partials/header') %>
-<div class="text-center py-20 space-y-6">
-    <h1 class="text-5xl font-extrabold text-white">Welcome to <%= appName %></h1>
-    <p class="text-slate-400 text-lg max-w-xl mx-auto">Build, scale, and iterate instantly with Express, HTMX, and TailwindCSS.</p>
-    <a href="/dashboard" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-6 py-3 rounded-lg shadow-lg">Go to App Dashboard &rarr;</a>
-</div>
-<%- include('partials/footer') %>`;
 
-    const dashboardView = `<%- include('partials/header') %>
-<div class="space-y-6">
-    <div class="bg-slate-800/60 border border-slate-700 p-6 rounded-xl">
-        <h2 class="text-2xl font-bold">App Dashboard</h2>
-        <p class="text-slate-400 text-sm mt-1">Logged in as: <span class="text-emerald-400 font-mono"><%= user.email %></span></p>
+      const dashboardPage = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= appName %> | Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+  <%- include('partials/nav.html') %>
+
+  <div class="max-w-6xl mx-auto w-full px-6 py-10 space-y-8">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-white">User Dashboard</h1>
+        <p class="text-slate-400 text-sm">Welcome back, <span class="text-emerald-400 font-mono"><%= user.email %></span></p>
+      </div>
+      <form hx-post="/api/billing/checkout" hx-swap="outerHTML">
+        <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-lg shadow transition">
+          Upgrade to Pro ($29)
+        </button>
+      </form>
     </div>
-</div>
-<%- include('partials/footer') %>`;
 
-    archive.append(headerPartial.trim(), { name: "views/partials/header.ejs" });
-    archive.append(footerPartial.trim(), { name: "views/partials/footer.ejs" });
-    archive.append(indexView.trim(), { name: "views/index.ejs" });
-    archive.append(dashboardView.trim(), { name: "views/dashboard.ejs" });
+    <!-- Dummy Dashboard Content -->
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="bg-slate-800/50 border border-slate-700/60 p-6 rounded-xl">
+        <div class="text-xs font-semibold text-slate-400 uppercase">Total API Calls</div>
+        <div class="text-3xl font-extrabold text-white mt-2">12,480</div>
+      </div>
+      <div class="bg-slate-800/50 border border-slate-700/60 p-6 rounded-xl">
+        <div class="text-xs font-semibold text-slate-400 uppercase">Subscription Status</div>
+        <div class="text-xl font-bold text-emerald-400 mt-2">Active Free Tier</div>
+      </div>
+      <div class="bg-slate-800/50 border border-slate-700/60 p-6 rounded-xl">
+        <div class="text-xs font-semibold text-slate-400 uppercase">Active Projects</div>
+        <div class="text-3xl font-extrabold text-white mt-2">4</div>
+      </div>
+    </div>
+  </div>
 
-    await archive.finalize();
-  } catch (err) {
-    console.error("Generator Error:", err);
-    res.status(500).send("Failed to generate boilerplate code.");
-  }
-});
+  <%- include('partials/footer.html') %>
+</body>
+</html>
+`;
+
+      const loginPage = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= appName %> | Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-center items-center p-6">
+  <div class="w-full max-w-md bg-slate-950 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
+    <div class="text-center">
+      <a href="/" class="text-2xl font-black text-emerald-400"><%= appName %></a>
+      <h2 class="text-xl font-bold text-white mt-4">Welcome Back</h2>
+    </div>
+
+    <form hx-post="/api/auth/login" hx-target="#auth-error" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Email Address</label>
+        <input type="email" name="email" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Password</label>
+        <input type="password" name="password" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+      </div>
+      <div id="auth-error"></div>
+      <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition">Sign In</button>
+    </form>
+    <p class="text-xs text-center text-slate-500">Don't have an account? <a href="/signup" class="text-emerald-400 hover:underline">Sign up</a></p>
+  </div>
+</body>
+</html>
+`;
+
+      const signupPage = loginPage
+        .replace("Welcome Back", "Create Your Account")
+        .replace("/api/auth/login", "/api/auth/signup")
+        .replace("Sign In", "Create Account")
+        .replace(
+          'Don\'t have an account? <a href="/signup" class="text-emerald-400 hover:underline">Sign up</a>',
+          'Already have an account? <a href="/login" class="text-emerald-400 hover:underline">Sign in</a>',
+        );
+
+      const aboutPage = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= appName %> | About</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+  <%- include('partials/nav.html') %>
+  <div class="max-w-4xl mx-auto py-16 px-6 space-y-6">
+    <h1 class="text-4xl font-extrabold text-white">About <%= appName %></h1>
+    <p class="text-slate-400 leading-relaxed">This application was bootstrapped using the FaastSaaS engine. It provides a flexible foundation built on Express, HTMX, and Tailwind CSS designed for rapid iteration.</p>
+  </div>
+  <%- include('partials/footer.html') %>
+</body>
+</html>
+`;
+
+      const contactPage = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= appName %> | Contact</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+  <%- include('partials/nav.html') %>
+  <div class="max-w-xl mx-auto py-16 px-6 space-y-6 w-full">
+    <h1 class="text-3xl font-extrabold text-white">Get in Touch</h1>
+    <form class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1">Name</label>
+        <input type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1">Message</label>
+        <textarea rows="4" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"></textarea>
+      </div>
+      <button type="button" class="bg-emerald-500 text-slate-950 font-bold px-6 py-3 rounded-lg">Send Message</button>
+    </form>
+  </div>
+  <%- include('partials/footer.html') %>
+</body>
+</html>
+`;
+
+      // Append views and partials to ZIP
+      archive.append(navPartial.trim(), { name: "views/partials/nav.html" });
+      archive.append(footerPartial.trim(), {
+        name: "views/partials/footer.html",
+      });
+      archive.append(indexPage.trim(), { name: "views/index.html" });
+      archive.append(dashboardPage.trim(), { name: "views/dashboard.html" });
+      archive.append(loginPage.trim(), { name: "views/login.html" });
+      archive.append(signupPage.trim(), { name: "views/signup.html" });
+      archive.append(aboutPage.trim(), { name: "views/about.html" });
+      archive.append(contactPage.trim(), { name: "views/contact.html" });
+
+      // Finalize ZIP archive
+      await archive.finalize();
+      // 4. FIX: Increment generation/usage count (NOT verified domains count)
+      req.user.saasGenerationsCount = (req.user.saasGenerationsCount || 0) + 1;
+      await req.user.save();
+    } catch (err) {
+      console.error("Generator Error:", err);
+      res.status(500).send("Failed to generate boilerplate code.");
+    }
+  },
+);
 
 //===========PAYMENTS?
 app.post("/payments/checkout", authMiddleware, async (req, res) => {
