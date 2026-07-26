@@ -3,64 +3,102 @@ const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const { PromptTemplate } = require("@langchain/core/prompts");
 const { StringOutputParser } = require("@langchain/core/output_parsers");
 
-/**
- * Fetch and extract text content + verify domain authorization token
- */
-async function crawlSaaSWebsite(targetUrl, user) {
-  // const parsedUrl = new URL(targetUrl);
-  // const domainHost = parsedUrl.origin.toLowerCase();
-
-  // console.log(`parsedUrl: ${parsedUrl} -> ${parsedUrl.length}`);
-  // console.log(`targetUrl: ${targetUrl} -> ${targetUrl.length}`);
-  // console.log(`domainHost: ${domainHost}`);
-
-  // // 1. Check if user already verified this domain previously
-  // const isAlreadyVerified = user.verifiedUrls.some(
-  //   (u) => u.toLowerCase() === domainHost,
-  // );
-
+async function fetchSinglePage(url, timeoutMs = 5000) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const response = await fetch(targetUrl, {
-    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-    signal: controller.signal,
-  });
-  clearTimeout(timeoutId);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FaastCrawler/1.0",
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!response.ok) return null;
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    // Remove boilerplate elements
+    $("script, style, nav, footer, svg, iframe, noscript").remove();
+
+    return {
+      url,
+      title: $("title").text().trim() || "No title",
+      metaDesc: $('meta[name="description"]').attr("content") || "",
+      headings: $("h1, h2, h3")
+        .map((_, el) => $(el).text().trim())
+        .get()
+        .join(" | "),
+      bodyText: $("body").text().replace(/\s+/g, " ").trim().slice(0, 1500),
+      // Collect valid internal links for crawling
+      links: $("a[href]")
+        .map((_, el) => $(el).attr("href"))
+        .get(),
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return null; // Gracefully fail individual page fetches
+  }
+}
+
+async function crawlSaaSWebsite(targetUrl, maxPages = 4) {
+  const baseUrl = new URL(targetUrl);
+
+  // 1. Fetch main landing page
+  const mainPage = await fetchSinglePage(targetUrl);
+  if (!mainPage) {
+    throw new Error(`Could not reach target URL: ${targetUrl}`);
   }
 
-  const html = await response.text();
-  const $ = cheerio.load(html);
+  const visitedUrls = new Set([targetUrl, targetUrl + "/"]);
+  const pagesToCrawl = [];
 
-  // // Check meta verification token if domain isn't already saved
-  // if (!isAlreadyVerified) {
-  //   const foundToken = $('meta[name="faastsaas-verification"]').attr("content");
+  // 2. Filter internal subpages (e.g., /about, /pricing, /features)
+  for (const link of mainPage.links) {
+    try {
+      const resolvedUrl = new URL(link, targetUrl);
 
-  //   if (foundToken !== user.verificationToken) {
-  //     const verificationError = new Error("DOMAIN_UNAUTHORIZED");
-  //     verificationError.metaRequired = `<meta name="faastsaas-verification" content="${user.verificationToken}">`;
-  //     verificationError.domainHost = domainHost;
-  //     throw verificationError;
-  //   }
+      // Ensure link stays within the same domain/origin
+      if (
+        resolvedUrl.origin === baseUrl.origin &&
+        !visitedUrls.has(resolvedUrl.href) &&
+        !resolvedUrl.pathname.match(/\.(png|jpg|jpeg|gif|pdf|css|js)$/i)
+      ) {
+        visitedUrls.add(resolvedUrl.href);
+        pagesToCrawl.push(resolvedUrl.href);
+      }
+    } catch (e) {
+      // Ignore invalid URLs
+    }
 
-  //   // Token found! Save to verified list
-  //   user.verifiedUrls.push(domainHost);
-  //   await user.save();
-  // }
+    if (pagesToCrawl.length >= maxPages - 1) break;
+  }
 
-  $("script, style, nav, footer, svg, iframe").remove();
+  // 3. Crawl subpages concurrently
+  const subPagePromises = pagesToCrawl.map((url) => fetchSinglePage(url));
+  const subPages = (await Promise.all(subPagePromises)).filter(Boolean);
+
+  const allPages = [mainPage, ...subPages];
+
+  // 4. Combine results into a structured prompt context for your Strategy Agent
+  const combinedSummary = allPages
+    .map(
+      (page, idx) => `
+--- PAGE ${idx + 1}: ${page.url} ---
+Title: ${page.title}
+Description: ${page.metaDesc}
+Headings: ${page.headings}
+Content Snippet: ${page.bodyText}
+`,
+    )
+    .join("\n");
 
   return {
-    title: $("title").text().trim() || "No title",
-    metaDesc: $('meta[name="description"]').attr("content") || "No description",
-    headings: $("h1, h2, h3")
-      .map((_, el) => $(el).text().trim())
-      .get()
-      .join(" | "),
-    bodyText: $("body").text().replace(/\s+/g, " ").trim().slice(0, 3000),
+    pageCount: allPages.length,
+    siteContext: combinedSummary.slice(0, 8000), // Cap token size to prevent AI hanging
   };
 }
 
@@ -68,7 +106,7 @@ async function generateMarketingStrategy(targetUrl, user) {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_API_KEY missing");
 
-  const scrapedData = await crawlSaaSWebsite(targetUrl, user);
+  const scrapedData = await crawlSaaSWebsite(targetUrl);
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3.1-flash-lite",
@@ -156,10 +194,11 @@ FORMAT YOUR RESPONSE AS HTML (using Tailwind classes, no html/body wrapper):
 
   return await chain.invoke({
     targetUrl,
-    title: scrapedData.title,
-    metaDesc: scrapedData.metaDesc,
-    headings: scrapedData.headings,
-    bodyText: scrapedData.bodyText,
+    title: scrapedData?.title || "",
+    metaDesc: scrapedData?.metaDesc || "",
+    headings: scrapedData?.headings || "",
+    bodyText: scrapedData?.bodyText || "",
+    isFreeTier,
   });
 }
 

@@ -353,24 +353,36 @@ app.post(
 );
 
 //==================================
-
+// Verified domains get crawled, and get Go-To-Market analyses
 app.post("/api/analyze", authMiddleware, checkDomainLimit, async (req, res) => {
   try {
-    // // 1. Support targetUrl, domain, or url form input names
-    //const rawUrl = req.body.url;
-    console.log(`req.body.url: ${req.body.url}`);
+    const targetUrl = req.body?.url;
 
-    if (req.user.verifiedUrls.includes(req.body.url)) {
-      // 3. Generate strategy using the formatted URL & user context
-      const strategyHtml = await generateMarketingStrategy(
-        req.body.url,
-        req.user,
-      );
-
-      return res.send(strategyHtml);
+    if (!targetUrl) {
+      return res.status(400).send(`
+        <div class="bg-red-900/40 border border-red-700/60 text-red-200 text-xs p-3 rounded-lg">
+          Analysis failed: Missing 'url' parameter in request body.
+        </div>
+      `);
     }
+
+    // Security check: Verify user owns or has verified this URL
+    if (!req.user?.verifiedUrls?.includes(targetUrl)) {
+      return res.status(403).send(`
+        <div class="bg-red-900/40 border border-red-700/60 text-red-200 text-xs p-3 rounded-lg">
+          Analysis failed: You are not authorized to analyze this domain.
+        </div>
+      `);
+    }
+
+    // Generate strategy using formatted URL & user context
+    const strategyHtml = await generateMarketingStrategy(targetUrl, req.user);
+    //[TODO]: Add tracker to User model like req.user.gtmPlanRan, to check how many times
+    // the user has scanned/generated a GTM plan for each verified domain under that account
+    return res.status(200).send(strategyHtml);
   } catch (err) {
-    return res.send(`
+    console.error("Strategy Generation Error:", err);
+    return res.status(500).send(`
         <div class="bg-red-900/40 border border-red-700/60 text-red-200 text-xs p-3 rounded-lg">
           Analysis failed: ${err.message}
         </div>

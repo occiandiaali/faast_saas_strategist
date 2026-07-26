@@ -139,7 +139,7 @@
           Analyze Your Verified Domain
         </h2>
         <p class="text-sm text-slate-400 mb-6">
-          Enter/Paste the verified URL from above. 
+          Enter/Paste any verified domain below. 
           Our crawler will analyze your page and generate a
           go-to-market plan.
         </p>
@@ -338,6 +338,21 @@
             scrollX: 0,
             useCORS: true,
             logging: false,
+            onclone: (clonedDoc) => {
+                // Remove alpha transparency on the exported container
+                const container = clonedDoc.getElementById('strategy-output');
+                if (container) {
+                    container.style.backgroundColor = '#0f172a';
+                    container.style.opacity = '1';
+
+                    // Convert any translucent card backgrounds (bg-slate-800/60) to solid #1e293b
+                    const sections = container.querySelectorAll('section');
+                    sections.forEach(sec => {
+                        sec.style.backgroundColor = '#1e293b';
+                        sec.style.opacity = '1';
+                    });
+                }
+            }
           },
           jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
           pagebreak: { mode: ["avoid-all", "css", "legacy"] }, // Prevents awkward element splits across pages
