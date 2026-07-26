@@ -34,18 +34,17 @@ const checkDomainLimit = (req, res, next) => {
   next();
 };
 
-// Guard for generating SaaS marketing strategies
 const checkGenerationLimit = (req, res, next) => {
   const user = req.user;
 
   if (user.planTier === "free" && user.saasGenerationsCount >= 2) {
-    return res.send(`
+    return res.status(403).send(`
             <div class="bg-amber-900/40 border border-amber-600/60 p-4 rounded-xl text-amber-200 text-sm mb-4">
                 <div class="font-bold mb-1 flex items-center gap-2">
                     🔒 Free Tier Limit Reached
                 </div>
                 <p class="text-xs mb-3 text-amber-300/80">
-                    You've reached your limit on free SaaS projects generation. Get Starter/Pro plans now to unlock more.
+                    You've reached your limit on free SaaS projects generation. Get Starter or Pro plan now to unlock more.
                 </p>
                 <a href="/pricing" class="inline-block bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold px-3 py-1.5 rounded transition">
                     Upgrade Now →
@@ -53,7 +52,7 @@ const checkGenerationLimit = (req, res, next) => {
             </div>
         `);
   } else if (user.planTier === "starter" && user.saasGenerationsCount >= 10) {
-    return res.send(`
+    return res.status(403).send(`
             <div class="bg-amber-900/40 border border-amber-600/60 p-4 rounded-xl text-amber-200 text-sm mb-4">
                 <div class="font-bold mb-1 flex items-center gap-2">
                     🔒 Starter Tier Limit Reached

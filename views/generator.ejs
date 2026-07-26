@@ -39,7 +39,7 @@
             ⚡faastsaas
           </h1>
           <p class="text-slate-400 mt-2 text-xs md:text-lg">
-            Get your Express + HTMX stack and download your codebase.
+            Get your Express/NodeJS + HTMX stack and download your codebase.
           </p>
         </div>
         <div class="flex flex-col md:flex-row md:mx-auto">
@@ -57,27 +57,40 @@
           </a>
         </div>
       </header>
-                <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center">
         <span class="text-slate-400">Current Plan:</span>
         <span class="font-bold text-emerald-400 uppercase"><%= user.planTier %></span>
     </div>
           <% if (user.planTier === 'free') { %>
-        <div class="space-y-1 pt-2 border-t border-slate-700">
+        <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
             <div class="flex justify-between text-slate-300 text-sm">
                 <span>Available Boilerplates:</span>
                 <span><%= user.saasGenerationsCount %> / 2</span>
             </div>
-            <!-- <div class="flex justify-between text-slate-300">
-                <span>Strategy Generations:</span>
-                <span><%= user.saasGenerationsCount %> / 1</span>
-            </div> -->
+ 
         </div>
         <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
             Upgrade Plan
         </a>
     <% } %>
 
-      <form action="/api/generate" method="POST" id="gen-form" onsubmit="triggerDownloadUI()" class="space-y-8">
+      <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
+            <div class="flex justify-between text-slate-300 text-sm">
+                <span>Available Boilerplates:</span>
+                    <% if (user.planTier === 'starter') { %>
+                      <span><%= user.saasGenerationsCount %> / 10</span>
+
+                    <% } %>
+                    <% if (user.planTier === 'pro') { %>
+                      <span><%= user.saasGenerationsCount %> / Unlimited</span>
+
+                    <% } %>
+            </div>
+        </div>
+
+      <!-- <form action="/api/generate" method="POST" id="gen-form" onsubmit="triggerDownloadUI()" class="space-y-8"> -->
+        <form id="gen-form" onsubmit="handleFormSubmission(event)" class="space-y-8">
+
         <!-- App Name Input -->
         <div>
           <label
@@ -213,10 +226,12 @@
             ✨ Packing authentication framework, database models, partial views,
             and subscription modules... Your download will begin instantly.
           </div>
+              <!-- Notification Container for Errors / Limits -->
+    <div id="gen-notification"></div>
           <!-- Submit Action -->
           <button
             type="submit"
-            id="submit-btn"
+            id="download-btn"
             class="w-full bg-gradient-to-r from-green-700 to-green-500 hover:from-lime-600 hover:to-green-600 text-slate-950 font-bold shadow-xl tracking-wide transition transform active:scale-95 p-4 rounded-xl text-sm md:text-lg rounded-lg transition flex justify-center items-center gap-3"
           >
             <span id="btn-text">📦 Download Boilerplate (.zip)</span>
@@ -280,27 +295,92 @@
         }
       }
 
-      function triggerDownloadUI() {
-        const btn = document.getElementById("submit-btn");
-        const text = document.getElementById("btn-text");
-        const toast = document.getElementById("status-toast");
 
-        btn.disabled = true;
-        btn.style.opacity = "0.5";
-        btn.style.cursor = "not-allowed";
-        text.innerHTML =
-          "⚙️ Executing Full-Stack App Scaffolding Compilation...";
-        toast.classList.remove("hidden");
+      async function handleFormSubmission(event) {
+    event.preventDefault();
 
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.style.opacity = "1";
+    const form = document.getElementById('gen-form');
+    const notificationContainer = document.getElementById('gen-notification');
+    const btn = document.getElementById('download-btn');
+    const btnText = document.getElementById("btn-text");
+    const toast = document.getElementById("status-toast");
+
+    // Clear previous warnings
+    notificationContainer.innerHTML = '';
+
+    const formData = new FormData(form);
+    const bodyData = Object.fromEntries(formData.entries());
+
+    try {
+          btn.disabled = true;
+    btn.style.opacity = "0.5"
+    btn.style.cursor = "not-allowed"
+    btnText.innerText = '⚙️Generating Zip...';
+    toast.classList.remove("hidden");
+
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.style.opacity = "1";
           btn.style.cursor = "pointer";
-          text.innerHTML =
-            "📦 Generate & Download Full SaaS Boilerplate Source (.zip)";
+          btnText.innerText =
+            "📦 Download Boilerplate (.zip)";
           toast.classList.add("hidden");
         }, 5000);
-      }
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyData)
+        });
+
+        const contentType = response.headers.get('content-type');
+
+        // IF THE SERVER RETURNED AN ERROR / WARNING (HTML Fragment)
+        if (!response.ok || (contentType && contentType.includes('text/html'))) {
+            const htmlMessage = await response.text();
+            notificationContainer.innerHTML = htmlMessage;
+            
+            // Re-enable button
+            btn.disabled = false;
+           // btn.innerText = 'Generate & Download Boilerplate';
+                 btn.style.opacity = "1";
+          btn.style.cursor = "pointer";
+          btnText.innerText =
+            "📦 Download Boilerplate (.zip)";
+           toast.classList.add("hidden");
+       
+            return;
+        }
+
+        // IF THE SERVER RETURNED A ZIP FILE DOWNLOAD
+        if (contentType && contentType.includes('application/zip')) {
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            // Extract filename from headers or default
+            a.href = downloadUrl;
+            a.download = `${bodyData.appName || 'saas'}-boilerplate.zip`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+
+            // Re-enable button after download triggers
+            btn.disabled = false;
+            btn.innerText = 'Generate & Download Boilerplate';
+        }
+    } catch (error) {
+        notificationContainer.innerHTML = `
+            <div class="bg-red-900/40 border border-red-600/60 p-4 rounded-xl text-red-200 text-sm mb-4">
+                ❌ Something went wrong while generating your download. Please try again.
+            </div>
+        `;
+        btn.disabled = false;
+        btn.innerText = 'Generate & Download Boilerplate';
+    }
+}
     </script>
   </body>
 </html>

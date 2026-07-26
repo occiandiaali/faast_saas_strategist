@@ -106,7 +106,7 @@
         <span class="font-bold text-emerald-400 uppercase"><%= user.planTier %></span>
     </div>
           <% if (user.planTier === 'free') { %>
-        <div class="space-y-1 pt-2 border-t border-slate-700">
+        <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
             <div class="flex justify-between text-slate-300 text-sm">
                 <span>Verified Domains:</span>
                 <span><%= user.verifiedDomainsCount %> / 1</span>
@@ -120,15 +120,21 @@
             Upgrade Plan
         </a>
     <% } %>
-        <!-- <h2 class="text-xl font-bold mb-2 text-cyan-400">
-          Analyze Your SaaS Landing Page
-        </h2>
-        <p class="text-sm text-slate-400 mb-6">
-          Enter either your local development URL (e.g.,
-          <code class="text-amber-300">http://localhost:3000</code>) or a
-          deployed live URL. Our crawler will analyze your page and generate a
-          tailored go-to-market plan.
-        </p> -->
+
+          <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
+            <div class="flex justify-between text-slate-300 text-sm">
+                <span>Verified Domains:</span>
+                    <% if (user.planTier === 'starter') { %>
+                      <span><%= user.verifiedDomainsCount %> / 10</span>
+
+                    <% } %>
+                    <% if (user.planTier === 'pro') { %>
+                      <span><%= user.verifiedDomainsCount %> / Unlimited</span>
+
+                    <% } %>
+            </div>
+        </div>
+
         <h2 class="text-xl font-bold mb-2 text-cyan-400">
           Analyze Your Verified Domain
         </h2>
