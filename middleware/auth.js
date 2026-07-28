@@ -16,11 +16,14 @@ async function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
     const user = await User.findById(decoded.userId);
     if (!user) {
       res.clearCookie("auth_token");
       return res.redirect("/login");
     }
+
+    await user.resetMonthlyQuotasIfNeeded();
 
     req.user = user;
     res.locals.user = user; // Accessible in EJS views

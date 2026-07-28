@@ -23,17 +23,23 @@
     <div class="max-w-4xl mx-auto py-12 px-4">
       <!-- Header Nav -->
       <header
-        class="mb-8 border-b border-slate-800 pb-6 flex justify-between items-center"
+        class="mb-12 border-b border-slate-800 pb-6 flex justify-between items-center"
       >
         <div>
-          <h1
+          <!-- <h1
             class="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+          >
+            ⚡faastsaas
+          </h1> -->
+         <h1
+            class="text-2xl md:text-4xl font-black tracking-tight text-cyan-400 bg-clip-text"
           >
             ⚡faastsaas
           </h1>
           <p class="text-slate-400 mt-2 text-xs md:text-lg">
             AI Marketing Strategist For Indie SaaS
           </p>
+          
         </div>
         <div class="flex flex-col md:flex-row md:mx-auto">
           <a
@@ -50,6 +56,8 @@
           </a>
         </div>
       </header>
+
+      <span class="text-xs text-slate-400"><%- user.email %></span>
 
       <div
         class="mb-6 bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-sm"
@@ -104,36 +112,61 @@
           <div class="flex justify-between items-center">
         <span class="text-slate-400">Current Plan:</span>
         <span class="font-bold text-emerald-400 uppercase"><%= user.planTier %></span>
-    </div>
-          <% if (user.planTier === 'free') { %>
-        <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
+      </div>
+      <% if (user.planTier === 'free' || user.planTier === 'starter') { %>
+        <% if (user.planTier === 'free') { %>
+        <span class="text-xs text-slate-400 p-1">NOTE: You get only 1 domain &amp; only 1 scan on the FREE plan.</span>
+        <% } %>
+        <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
+            Upgrade Plan
+        </a>
+        <% } %>
+        <!-- <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
             <div class="flex justify-between text-slate-300 text-sm">
                 <span>Verified Domains:</span>
                 <span><%= user.verifiedDomainsCount %> / 1</span>
             </div>
-            <!-- <div class="flex justify-between text-slate-300">
-                <span>Strategy Generations:</span>
-                <span><%= user.saasGenerationsCount %> / 1</span>
-            </div> -->
-        </div>
-        <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
-            Upgrade Plan
-        </a>
-    <% } %>
+ 
+        </div> -->
 
           <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
             <div class="flex justify-between text-slate-300 text-sm">
                 <span>Verified Domains:</span>
+                  <% if (user.planTier === 'free') { %>
+                      <span><%= user.verifiedDomainsCount %> / 1</span>
+
+                    <% } %>
                     <% if (user.planTier === 'starter') { %>
-                      <span><%= user.verifiedDomainsCount %> / 10</span>
+                      <span><%= user.verifiedDomainsCount %> / 20</span>
 
                     <% } %>
                     <% if (user.planTier === 'pro') { %>
-                      <span><%= user.verifiedDomainsCount %> / Unlimited</span>
+                      <span>Unlimited</span>
 
                     <% } %>
             </div>
-        </div>
+            <!--maxScans?-->
+                 <div class="flex justify-between text-slate-300 text-sm">
+                      
+                <span>Remaining scans:</span>
+               
+
+                    <% if (user.planTier === 'free') { %>
+                      <span><%= user.maxScans %> / 1</span>
+
+                    <% } %>
+          
+
+                    <% if (user.planTier === 'starter') { %>
+                      <span><%= user.maxScans %> / 20</span>
+
+                    <% } %>
+                    <% if (user.planTier === 'pro') { %>
+                      <span><%= user.maxScans %> / 100</span>
+
+                    <% } %>
+            </div>
+        </div><!--END-->
 
         <h2 class="text-xl font-bold mb-2 text-cyan-400">
           Analyze Your Verified Domain
@@ -253,7 +286,7 @@
 
     <!--FOOTER-->
     <footer
-      class="bottom-0 left-0 z-20 w-full p-4 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
+      class="bottom-0 left-0 z-20 w-full p-4 text-slate-400 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
     >
       <span class="text-sm text-body sm:text-center"
         >© 2026 FaastSaas by
@@ -266,7 +299,7 @@
         | All Rights Reserved.</span
       >
       <ul
-        class="flex flex-wrap items-center mt-3 text-sm font-medium text-body sm:mt-0"
+        class="flex flex-wrap items-center mt-3 text-sm text-white font-medium text-body sm:mt-0"
       >
         <li>
           <a href="#" class="hover:underline me-4 md:me-6">About</a>

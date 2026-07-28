@@ -16,7 +16,7 @@ const checkDomainLimit = (req, res, next) => {
                 </a>
             </div>
         `);
-  } else if (user.planTier === "starter" && user.verifiedDomainsCount >= 10) {
+  } else if (user.planTier === "starter" && user.verifiedDomainsCount >= 20) {
     return res.send(`
             <div class="bg-amber-900/40 border border-amber-600/60 p-4 rounded-xl text-amber-200 text-sm mb-4">
                 <div class="font-bold mb-1 flex items-center gap-2">
@@ -37,7 +37,7 @@ const checkDomainLimit = (req, res, next) => {
 const checkGenerationLimit = (req, res, next) => {
   const user = req.user;
 
-  if (user.planTier === "free" && user.saasGenerationsCount >= 2) {
+  if (user.planTier === "free" && user.saasGenerationsCount >= 1) {
     return res.status(403).send(`
             <div class="bg-amber-900/40 border border-amber-600/60 p-4 rounded-xl text-amber-200 text-sm mb-4">
                 <div class="font-bold mb-1 flex items-center gap-2">
@@ -51,14 +51,14 @@ const checkGenerationLimit = (req, res, next) => {
                 </a>
             </div>
         `);
-  } else if (user.planTier === "starter" && user.saasGenerationsCount >= 10) {
+  } else if (user.planTier === "starter" && user.saasGenerationsCount >= 20) {
     return res.status(403).send(`
             <div class="bg-amber-900/40 border border-amber-600/60 p-4 rounded-xl text-amber-200 text-sm mb-4">
                 <div class="font-bold mb-1 flex items-center gap-2">
                     🔒 Starter Tier Limit Reached
                 </div>
                 <p class="text-xs mb-3 text-amber-300/80">
-                    You've used your 10 Starter SaaS projects generation. Upgrade to unlock unlimited usage.
+                    You've used up your Starter SaaS projects generation. Upgrade to unlock unlimited usage.
                 </p>
                 <a href="/pricing" class="inline-block bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold px-3 py-1.5 rounded transition">
                     Upgrade to Pro →

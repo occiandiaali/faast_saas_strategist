@@ -186,10 +186,10 @@ app.post("/api/auth/login", async (req, res) => {
     res.setHeader("HX-Redirect", "/index");
     return res.status(200).send("Success");
   } catch (err) {
-    // res.render("login", { error: "Login error" });
+    console.error(`Login processing error: ${err.message}`);
     return res.send(`
             <div class="bg-red-900/40 border border-red-700/60 text-red-200 text-xs p-3 rounded-lg mb-4">
-                Login processing error: ${err.message}
+                Couldn't log you in. The server might be temporarily down. Please, try again in a minute or two.
             </div>
         `);
   }
@@ -375,10 +375,48 @@ app.post("/api/analyze", authMiddleware, checkDomainLimit, async (req, res) => {
       `);
     }
 
-    // Generate strategy using formatted URL & user context
+    // --- STARTER TIER TRACKING & CHECK ---
+    if (req.user?.planTier === "starter") {
+      const remainingScans = req.user.maxScans ?? 0;
+
+      // 1. Check if user is out of scans
+      if (remainingScans <= 0) {
+        return res.status(403).send(`
+          <div class="bg-amber-900/40 border border-amber-600/60 p-4 rounded-xl text-amber-200 text-sm mb-4">
+            <div class="font-bold mb-1 flex items-center gap-2">
+              🔒 Scan Limit Reached
+            </div>
+            <p class="text-xs mb-3 text-amber-300/80">
+              You've used all 20 AI market strategy scans included in your Starter plan. Upgrade to Pro for unlimited scans!
+            </p>
+            <a href="/pricing" class="inline-block bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold px-3 py-1.5 rounded transition">
+              Upgrade to Pro →
+            </a>
+          </div>
+        `);
+      }
+    }
+
+    // // Generate strategy using formatted URL & user context
     const strategyHtml = await generateMarketingStrategy(targetUrl, req.user);
-    //[TODO]: Add tracker to User model like req.user.gtmPlanRan, to check how many times
-    // the user has scanned/generated a GTM plan for each verified domain under that account
+    // //[TODO]: Add tracker to User model like req.user.gtmPlanRan, to check how many times
+    // // the user has scanned/generated a GTM plan for each verified domain under that account
+    // --- DECREMENT & TRACK AFTER SUCCESSFUL AI GENERATION ---
+    if (strategyHtml) {
+      // Decrement scan count if on starter tier
+      req.user.maxScans = Math.max(0, req.user.maxScans - 1);
+
+      // // Track domain run count
+      // if (!req.user.gtmPlanRan) {
+      //   req.user.gtmPlanRan = new Map();
+      // }
+
+      // const currentDomainRuns = req.user.gtmPlanRan.get(targetUrl) || 0;
+      // req.user.gtmPlanRan.set(targetUrl, currentDomainRuns + 1);
+
+      await req.user.save();
+    }
+
     return res.status(200).send(strategyHtml);
   } catch (err) {
     console.error("Strategy Generation Error:", err);

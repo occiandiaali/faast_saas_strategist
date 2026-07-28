@@ -33,8 +33,13 @@
         class="mb-12 border-b border-slate-800 pb-6 flex justify-between items-center"
       >
         <div>
-          <h1
+          <!-- <h1
             class="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+          >
+            ⚡faastsaas
+          </h1> -->
+       <h1
+            class="text-2xl md:text-4xl font-black tracking-tight text-cyan-400 bg-clip-text"
           >
             ⚡faastsaas
           </h1>
@@ -61,28 +66,32 @@
         <span class="text-slate-400">Current Plan:</span>
         <span class="font-bold text-emerald-400 uppercase"><%= user.planTier %></span>
     </div>
-          <% if (user.planTier === 'free') { %>
-        <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
+          <% if (user.planTier === 'free' || user.planTier === 'starter') { %>
+            <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
+                Upgrade Plan
+            </a>
+        <!-- <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
             <div class="flex justify-between text-slate-300 text-sm">
                 <span>Available Boilerplates:</span>
-                <span><%= user.saasGenerationsCount %> / 2</span>
+                <span><%= user.saasGenerationsCount %> / 1</span>
             </div>
  
-        </div>
-        <a href="/pricing" class="block text-center m-3 bg-cyan-700 hover:bg-cyan-400 text-slate-200 py-1.5 rounded transition">
-            Upgrade Plan
-        </a>
+        </div> -->
     <% } %>
 
-      <div class="space-y-1 pt-1 pb-2 border-t border-slate-700">
+      <div class="space-y-1 pt-1 pb-4 border-t border-slate-700">
             <div class="flex justify-between text-slate-300 text-sm">
-                <span>Available Boilerplates:</span>
+                <span>Generated Boilerplates:</span>
+                  <% if (user.planTier === 'free') { %>
+                      <span><%= user.saasGenerationsCount %> / 1</span>
+
+                    <% } %>
                     <% if (user.planTier === 'starter') { %>
-                      <span><%= user.saasGenerationsCount %> / 10</span>
+                      <span><%= user.saasGenerationsCount %> / 20</span>
 
                     <% } %>
                     <% if (user.planTier === 'pro') { %>
-                      <span><%= user.saasGenerationsCount %> / Unlimited</span>
+                      <span>Unlimited</span>
 
                     <% } %>
             </div>
@@ -189,6 +198,7 @@
         </div>
 
         <!-- Dynamic Supabase Configuration Inputs -->
+         <% if (user.planTier === 'pro') { %> 
         <div id="supabase-fields" class="space-y-4 hidden">
           <div>
             <label
@@ -199,6 +209,7 @@
               type="text"
               id="supabaseUrl"
               name="supabaseUrl"
+              required
               placeholder="https://your-project-id.supabase.co"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
             />
@@ -212,11 +223,13 @@
               type="password"
               id="supabaseKey"
               name="supabaseKey"
+              required
               placeholder="eyJhbGciOiJIUzI1NiIsInR..."
               class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
             />
           </div>
         </div>
+        <% } %>
 
         <div class="pt-4 relative">
           <div
@@ -242,7 +255,7 @@
 
     <!--FOOTER-->
     <footer
-      class="bottom-0 left-0 z-20 w-full p-4 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
+      class="bottom-0 left-0 z-20 w-full p-4 text-slate-400 bg-neutral-primary-soft border-t border-default shadow-sm md:flex md:items-center md:justify-between md:p-6"
     >
       <span class="text-sm text-body sm:text-center"
         >© 2026 FaastSaas by
@@ -255,7 +268,7 @@
         | All Rights Reserved.</span
       >
       <ul
-        class="flex flex-wrap items-center mt-3 text-sm font-medium text-body sm:mt-0"
+        class="flex flex-wrap items-center mt-3 text-sm text-white font-medium text-body sm:mt-0"
       >
         <li><a href="#" class="hover:underline me-4 md:me-6">About</a></li>
         <li>
